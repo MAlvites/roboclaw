@@ -28,8 +28,12 @@
 #include "diffdrive_roscore.h"
 #include "roboclaw/RoboclawMotorVelocity.h"
 #include "geometry_msgs/Quaternion.h"
-#include "tf/transform_datatypes.h"
-#include "tf/transform_broadcaster.h"
+#include <geometry_msgs/TransformStamped.h>
+//#include "tf/transform_datatypes.h"
+//#include "tf/transform_broadcaster.h"
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_broadcaster.h>
+
 
 namespace roboclaw {
 
@@ -112,7 +116,8 @@ namespace roboclaw {
 
     void diffdrive_roscore::encoder_callback(const roboclaw::RoboclawEncoderSteps &msg) {
 
-        static tf::TransformBroadcaster br;
+        //Change to tf2
+        static tf2_ros::TransformBroadcaster br;
 
         int delta_1 = msg.mot1_enc_steps - last_steps_1;
         int delta_2 = msg.mot2_enc_steps - last_steps_2;
@@ -159,12 +164,19 @@ namespace roboclaw {
         odom.twist.twist.linear.x = cur_x - last_x;
         odom.twist.twist.linear.y = cur_y - last_y;
         odom.twist.twist.angular.z = cur_theta - last_theta;
-
-        tf::Quaternion quaternion = tf::createQuaternionFromRPY(0.0, 0.0, cur_theta);
-        odom.pose.pose.orientation.w = quaternion.w();
-        odom.pose.pose.orientation.x = quaternion.x();
-        odom.pose.pose.orientation.y = quaternion.y();
-        odom.pose.pose.orientation.z = quaternion.z();
+        
+        //Change to tf2
+        ////////////////////////////////////////////////////////////////////
+        tf2::Quaternion quat_tf ;
+        quat_tf.setRPY(0.0, 0.0, cur_theta);
+        geometry_msgs::Quaternion quat_msg = tf2::toMsg(quat_tf);
+        
+        odom.pose.pose.orientation = quat_msg;
+        //odom.pose.pose.orientation.w = quat_msg.w();
+        //odom.pose.pose.orientation.x = quat_msg.x();
+        //odom.pose.pose.orientation.y = quat_msg.y();
+        //odom.pose.pose.orientation.z = quat_msg.z();
+        ////////////////////////////////////////////////////////////////////
 
         // Pos_x Variance
         odom.pose.covariance[0] = var_pos_x;
@@ -175,10 +187,12 @@ namespace roboclaw {
         // Theta_z Variance
         odom.pose.covariance[35] = var_theta_z;
 
-        tf::Transform transform;
-        transform.setOrigin(tf::Vector3(last_x, last_y, 0.0));
-        transform.setRotation(tf::createQuaternionFromRPY(0.0, 0.0, cur_theta));
-        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "odom", "base_link"));
+        //Change to tf2
+        ////////////////////////////////////////////////////////////////////
+        geometry_msgs::TransformStamped stampedTransform;
+        tf2::transformTF2ToMsg(tf2::Transform(quat_tf, tf2::Vector3(last_x, last_y, 0.0)), stampedTransform, ros::Time::now(), "odom", "base_link")
+        br.sendTransform(stampedTransform);
+        ////////////////////////////////////////////////////////////////////
 
         odom_pub.publish(odom);
 

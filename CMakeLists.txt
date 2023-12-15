@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
         roscpp
         rospy
         std_msgs
-        tf
+        tf2
         )
 
 ## System dependencies are found with CMake's conventions
@@ -109,7 +109,7 @@ generate_messages(
 catkin_package(
         INCLUDE_DIRS include
         # LIBRARIES roboclaw
-        CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf
+        CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf2
         #  DEPENDS system_lib
 )
 
