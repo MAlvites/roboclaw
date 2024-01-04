@@ -34,6 +34,7 @@
 #include "tf2/LinearMath/Transform.h"
 #include "tf2/buffer_core.h"
 #include "tf2_ros/transform_broadcaster.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 
 namespace roboclaw {
@@ -170,6 +171,7 @@ namespace roboclaw {
         ////////////////////////////////////////////////////////////////////
         tf2::Quaternion quat_tf ;
         quat_tf.setRPY(0.0, 0.0, cur_theta);
+        
         geometry_msgs::Quaternion quat_msg = tf2::toMsg(quat_tf);
         
         odom.pose.pose.orientation = quat_msg;
@@ -190,8 +192,13 @@ namespace roboclaw {
 
         //Change to tf2
         ////////////////////////////////////////////////////////////////////
+        geometry_msgs::Transform Transform = tf2::toMsg(tf2::Transform(quat_tf, tf2::Vector3(last_x, last_y, 0.0)));
         geometry_msgs::TransformStamped stampedTransform;
-        tf2::transformTF2ToMsg(tf2::Transform(quat_tf, tf2::Vector3(last_x, last_y, 0.0)), stampedTransform, ros::Time::now(), "odom", "base_link")
+        stampedTransform.transform = Transform;    
+        stampedTransform.header.frame_id = "odom";
+        stampedTransform.child_frame_id = "base_link";
+        stampedTransform.header.stamp = ros::Time::now();
+        
         br.sendTransform(stampedTransform);
         ////////////////////////////////////////////////////////////////////
 
@@ -200,8 +207,6 @@ namespace roboclaw {
         last_x = cur_x;
         last_y = cur_y;
         last_theta = cur_theta;
-
     }
-
 
 }
